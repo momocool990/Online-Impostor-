@@ -1,61 +1,69 @@
+// server.js
+
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const http = require("http").createServer(app);
+const io = require("socket.io")(http, {
+  cors: {
+    origin: "*", // Allow frontend from Cloudflare Pages
+    methods: ["GET", "POST"]
+  }
+});
 
-app.use(express.static("public"));
+const PORT = process.env.PORT || 3000;
+app.use(express.static("public")); // Serve frontend files
 
-let lobbies = {}; // { lobbyId: {host, settings, players: []} }
+// Lobby data structure
+const lobbies = {};
 
 io.on("connection", (socket) => {
-  console.log("New connection:", socket.id);
-    // Chat messages
+  console.log("Socket connected:", socket.id);
+
+  // Create a new lobby
+  socket.on("createLobby", () => {
+    const lobbyId = Math.random().toString(36).substr(2, 5);
+    lobbies[lobbyId] = { players: [] };
+    socket.join(lobbyId);
+    socket.emit("lobbyCreated", lobbyId);
+    io.emit("updateLobbyList", lobbies);
+  });
+
+  // Join an existing lobby
+  socket.on("joinLobby", ({ lobbyId, name }) => {
+    if (lobbies[lobbyId]) {
+      const player = { id: socket.id, name };
+      lobbies[lobbyId].players.push(player);
+      socket.join(lobbyId);
+      io.to(lobbyId).emit("playerJoined", lobbies[lobbyId].players);
+      io.emit("updateLobbyList", lobbies);
+    }
+  });
+
+  // Handle chat messages
   socket.on("chatMessage", ({ lobbyId, name, message }) => {
     if (lobbies[lobbyId]) {
       io.to(lobbyId).emit("chatMessage", { name, message });
     }
   });
 
-
-  // Host creates a lobby
-  socket.on("createLobby", (settings) => {
-    const lobbyId = Math.random().toString(36).substr(2, 5);
-    lobbies[lobbyId] = {
-      host: socket.id,
-      settings,
-      players: []
-    };
-    socket.join(lobbyId);
-    socket.emit("lobbyCreated", { lobbyId, settings });
-    io.emit("updateLobbyList", lobbies);
-  });
-
-  // Player joins a lobby
-  socket.on("joinLobby", ({ lobbyId, name }) => {
-    if (lobbies[lobbyId]) {
-      lobbies[lobbyId].players.push({ id: socket.id, name });
-      socket.join(lobbyId);
-      io.to(lobbyId).emit("playerJoined", lobbies[lobbyId].players);
-    } else {
-      socket.emit("errorMsg", "Lobby not found");
-    }
-  });
-
   // Disconnect cleanup
   socket.on("disconnect", () => {
-    for (let id in lobbies) {
-      lobbies[id].players = lobbies[id].players.filter(p => p.id !== socket.id);
-      if (lobbies[id].host === socket.id) {
-        delete lobbies[id]; // remove lobby if host leaves
+    for (let lobbyId in lobbies) {
+      const lobby = lobbies[lobbyId];
+      const index = lobby.players.findIndex(p => p.id === socket.id);
+      if (index !== -1) {
+        lobby.players.splice(index, 1);
+        io.to(lobbyId).emit("playerJoined", lobby.players);
+        if (lobby.players.length === 0) {
+          delete lobbies[lobbyId];
+        }
+        io.emit("updateLobbyList", lobbies);
+        break;
       }
     }
-    io.emit("updateLobbyList", lobbies);
   });
 });
 
-server.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+http.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
