@@ -12,6 +12,13 @@ let lobbies = {}; // { lobbyId: {host, settings, players: []} }
 
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
+    // Chat messages
+  socket.on("chatMessage", ({ lobbyId, name, message }) => {
+    if (lobbies[lobbyId]) {
+      io.to(lobbyId).emit("chatMessage", { name, message });
+    }
+  });
+
 
   // Host creates a lobby
   socket.on("createLobby", (settings) => {
