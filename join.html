@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><title>Join Game</title></head>
+<body>
+  <h2>Join a Game</h2>
+  <div id="lobbies"></div>
+  <div id="joinForm"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on("updateLobbyList", (lobbies) => {
+      const listDiv = document.getElementById("lobbies");
+      listDiv.innerHTML = "";
+      for (let id in lobbies) {
+        const btn = document.createElement("button");
+        btn.innerText = `Lobby ${id} (Players: ${lobbies[id].players.length})`;
+        btn.onclick = () => showJoinForm(id);
+        listDiv.appendChild(btn);
+      }
+    });
+
+    function showJoinForm(lobbyId) {
+      const formDiv = document.getElementById("joinForm");
+      formDiv.innerHTML = `
+        <input id="name" placeholder="Enter your name">
+        <button onclick="joinLobby('${lobbyId}')">Join</button>
+      `;
+    }
+
+    function joinLobby(lobbyId) {
+      const name = document.getElementById("name").value;
+      socket.emit("joinLobby", { lobbyId, name });
+    }
+
+    socket.on("playerJoined", (players) => {
+      alert("Players in lobby: " + players.map(p => p.name).join(", "));
+    });
+  </script>
+</body>
+</html>
