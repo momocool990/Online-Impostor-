@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><title>Host Game</title></head>
+<body>
+  <h2>Host a Game</h2>
+  <form id="hostForm">
+    <label>Players: <input type="number" id="players" value="6"></label><br>
+    <label>Impostors: <input type="number" id="impostors" value="1"></label><br>
+    <label>Impostor gets category? <input type="checkbox" id="category"></label><br>
+    <label>Impostor gets hint word? <input type="checkbox" id="hint"></label><br>
+    <button type="submit">Create Lobby</button>
+  </form>
+  <div id="lobbyInfo"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    document.getElementById("hostForm").onsubmit = (e) => {
+      e.preventDefault();
+      const settings = {
+        players: +document.getElementById("players").value,
+        impostors: +document.getElementById("impostors").value,
+        category: document.getElementById("category").checked,
+        hint: document.getElementById("hint").checked
+      };
+      socket.emit("createLobby", settings);
+    };
+
+    socket.on("lobbyCreated", ({ lobbyId }) => {
+      document.getElementById("lobbyInfo").innerText =
+        "Lobby created! ID: " + lobbyId;
+    });
+  </script>
+</body>
+</html>
