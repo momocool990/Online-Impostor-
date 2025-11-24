@@ -5,6 +5,13 @@
   <h2>Join a Game</h2>
   <div id="lobbies"></div>
   <div id="joinForm"></div>
+  <div id="chat" style="display:none;">
+  <h3>Chat</h3>
+  <div id="messages" style="border:1px solid #ccc; height:200px; overflow-y:auto;"></div>
+  <input id="chatInput" placeholder="Type a message">
+  <button onclick="sendMessage()">Send</button>
+</div>
+
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
