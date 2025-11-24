@@ -1,0 +1,18 @@
+{
+  "name": "impostor-game",
+  "version": "1.0.0",
+  "description": "Multiplayer impostor word game with lobbies, chat, and real-time play",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Muhammad",
+  "license": "MIT"
+}
